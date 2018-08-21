@@ -1,0 +1,3 @@
+lucene/queryparser/docs/xml/img/plus.gif
+lucene/queryparser/docs/xml/img/join.gif
+lucene/queryparser/docs/xml/img/minusbottom.gif
