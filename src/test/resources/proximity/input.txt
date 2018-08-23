@@ -1,0 +1,3 @@
+file1="to be or not to be that is the question"
+file2="make a long story short"
+file3="see eye to eye"
