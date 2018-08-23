@@ -10,14 +10,13 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 
 /***
  * Proximity search implementation based on phrase query
@@ -58,10 +57,6 @@ public class ProximitySearch implements Closeable {
         this.writer.close();
     }
 
-    public List<Document> search(String text) throws IOException {
-        return search(text, DEFAULT_SLOP);
-    }
-
     private void initReader() throws IOException {
         if (reader == null) {
             reader = DirectoryReader.open(directory);
@@ -70,6 +65,50 @@ public class ProximitySearch implements Closeable {
         if (searcher == null) {
             searcher = new IndexSearcher(reader);
         }
+    }
+
+    public List<Document> searchWithPrefix(String text, int slop) throws IOException {
+        initReader();
+
+        MultiPhraseQuery.Builder builder = new MultiPhraseQuery.Builder()
+                .setSlop(slop);
+
+        String[] words = text.split("\\W+");
+        for (int i = 0; i < words.length - 1; i++) {
+            builder.add(new Term(CONTENT_FIELD, words[i]));
+        }
+
+        String lastWord = words[words.length - 1];
+        Set<String> termsWithPrefix = new HashSet<>();
+
+        for (LeafReaderContext leafReaderContext : reader.getContext().leaves()) {
+            LeafReader reader = leafReaderContext.reader();
+
+            TermsEnum termsEnum = reader.terms(CONTENT_FIELD).iterator();
+            BytesRef nextTerm = termsEnum.next();
+            while (nextTerm != null) {
+                String term = termsEnum.term().utf8ToString();
+                if (term.startsWith(lastWord)) {
+                    termsWithPrefix.add(term);
+                }
+
+                nextTerm = termsEnum.next();
+            }
+        }
+
+        Term[] prefixTerms = termsWithPrefix.stream().map(term -> new Term(CONTENT_FIELD, term)).toArray(Term[]::new);
+        MultiPhraseQuery query = builder
+                .add(prefixTerms)
+                .build();
+
+        TopDocs search = searcher.search(query, reader.numDocs());
+
+        List<Document> docs = new ArrayList<>();
+        for (ScoreDoc scoreDoc : search.scoreDocs) {
+            docs.add(reader.document(scoreDoc.doc));
+        }
+
+        return docs;
     }
 
     public List<Document> search(String text, int slop) throws IOException {
