@@ -7,7 +7,14 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.*;
+import org.apache.lucene.queryparser.xml.builders.SpanNearBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanQueryBuilder;
+import org.apache.lucene.queryparser.xml.builders.SpanQueryBuilderFactory;
 import org.apache.lucene.search.*;
+import org.apache.lucene.search.spans.NearSpansOrdered;
+import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
@@ -122,6 +129,28 @@ public class ProximitySearch implements Closeable {
                 .forEach(builder::add);
 
         PhraseQuery query = builder.build();
+
+        TopDocs search = searcher.search(query, reader.numDocs());
+
+        List<Document> docs = new ArrayList<>();
+        for (ScoreDoc scoreDoc : search.scoreDocs) {
+            docs.add(reader.document(scoreDoc.doc));
+        }
+
+        return docs;
+    }
+
+    public List<Document> searchWithStrictOrder(String text, int slop) throws IOException {
+        initReader();
+
+        SpanNearQuery.Builder builder = new SpanNearQuery.Builder(CONTENT_FIELD, true)
+                .setSlop(slop);
+
+        Arrays.stream(text.split("\\W+"))
+                .map(x -> new SpanTermQuery(new Term(CONTENT_FIELD, x)))
+                .forEach(builder::addClause);
+
+        SpanNearQuery query = builder.build();
 
         TopDocs search = searcher.search(query, reader.numDocs());
 
