@@ -77,14 +77,14 @@ public class TestProximitySearch {
         search(expectedResult, proximitySearch.searchWithStrictOrder(query, slop));
     }
 
-    private void search(List<String> expectedResult, List<Document> result) {
-        Assert.assertEquals(expectedResult.size(), result.size());
+    private void search(List<String> expectedResult, List<Document> actualResult) {
+        Assert.assertEquals(expectedResult.size(), actualResult.size());
 
-        List<String> resultString = new ArrayList<>();
-        for (Document document : result) {
-            resultString.add(document.get(ProximitySearch.FILE_NAME_FIELD));
+        List<String> resultStrings = new ArrayList<>();
+        for (Document document : actualResult) {
+            resultStrings.add(document.get(ProximitySearch.FILE_NAME_FIELD));
         }
 
-        Assert.assertThat(expectedResult, containsInAnyOrder(resultString.toArray()));
+        Assert.assertThat(resultStrings, containsInAnyOrder(expectedResult.toArray()));
     }
 }

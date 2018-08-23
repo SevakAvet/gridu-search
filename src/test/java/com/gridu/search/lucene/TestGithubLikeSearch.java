@@ -63,11 +63,11 @@ public class TestGithubLikeSearch {
         List<Document> result = githubLikeSearch.search(this.query);
         Assert.assertEquals(this.expectecResult.size(), result.size());
 
-        List<String> resultString = new ArrayList<>();
+        List<String> resultStrings = new ArrayList<>();
         for (Document document : result) {
-            resultString.add(document.get(CONTENT_FIELD));
+            resultStrings.add(document.get(CONTENT_FIELD));
         }
 
-        Assert.assertThat(this.expectecResult, containsInAnyOrder(resultString.toArray()));
+        Assert.assertThat(resultStrings, containsInAnyOrder(this.expectecResult.toArray()));
     }
 }
